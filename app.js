@@ -121,7 +121,7 @@ function taskForm(priority){
     labelWrap('One‑line task', title),
     labelWrap('Who’s involved (teammates, reporting to)', people),
     labelWrap('Deliverable', deliver),
-    el('div',{class:'row'},[
+    el('div',{class:'row', style:'margin-top:8px'},[
       button(`Add ${p.label}`, (e)=>{
         e.preventDefault();
         if(!title.value.trim()||!deliver.value.trim()) return;
@@ -155,7 +155,7 @@ function editTask(priority){
     labelWrap('One‑line task', title),
     labelWrap('Who’s involved (teammates, reporting to)', people),
     labelWrap('Deliverable', deliver),
-    el('div',{class:'row'},[
+    el('div',{class:'row', style:'margin-top:8px'},[
       button('Save', ()=>{ state.tasks[priority] = { ...t, title:title.value.trim(), people:people.value.trim(), deliverable:deliver.value.trim() }; renderAll(); }, 'pri'),
       el('div',{class:'right'}),
       button('Cancel', ()=>renderAll())
