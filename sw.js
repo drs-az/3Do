@@ -37,6 +37,7 @@ self.addEventListener('message', (event) => {
         .then(() => caches.open(CACHE_NAME))
         .then(cache => cache.addAll(CORE_ASSETS))
         .then(() => event.ports[0] && event.ports[0].postMessage('UPDATED'))
+        .catch(err => event.ports[0]?.postMessage({status:'error', message: err.message}))
     );
   }
 });
