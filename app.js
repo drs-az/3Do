@@ -12,9 +12,9 @@ function el(tag, props={}, children=[]) {
 
 // -------------------- Constants & Helpers -----------------------------------
 const PRIORITIES = {
-  red:   { label: 'High',   xp: 30, pill:'red'   },
-  yellow:{ label: 'Medium', xp: 20, pill:'yellow'},
-  green: { label: 'Low',    xp: 10, pill:'green' },
+  red:   { label: 'High',   xp: 15, pill:'red'   },
+  yellow:{ label: 'Medium', xp: 10, pill:'yellow'},
+  green: { label: 'Low',    xp: 5, pill:'green' },
 };
 
 function isoWeekKey(date = new Date()){
@@ -216,13 +216,13 @@ function showHistoryDetails(idx){
 
 // ----- Robot
 const PARTS = [
-  { key:'legs',    label:'Legs',    xp:10  },
-  { key:'body',    label:'Body',    xp:20  },
-  { key:'arms',    label:'Arms',    xp:30  },
-  { key:'head',    label:'Head',    xp:40  },
-  { key:'antenna', label:'Antenna', xp:50  },
-  { key:'eyes',    label:'Eyes',    xp:70  },
-  { key:'jetpack', label:'Jetpack', xp:90  },
+  { key:'legs',    label:'Legs',    xp:30  },
+  { key:'body',    label:'Body',    xp:60  },
+  { key:'arms',    label:'Arms',    xp:90  },
+  { key:'head',    label:'Head',    xp:120  },
+  { key:'antenna', label:'Antenna', xp:150  },
+  { key:'eyes',    label:'Eyes',    xp:180  },
+  { key:'jetpack', label:'Jetpack', xp:210  },
 ];
 
 function renderRobot(){
