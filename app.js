@@ -302,6 +302,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
       window.location.reload();
     }
   });
+  const powerLink = $('#powerLink');
+  const powerModal = $('#powerModal');
+  const powerClose = $('#powerClose');
+  powerLink.addEventListener('click', e=>{ e.preventDefault(); powerModal.classList.remove('hidden'); });
+  powerClose.addEventListener('click', ()=> powerModal.classList.add('hidden'));
+  powerModal.addEventListener('click', e=>{ if(e.target===powerModal) powerModal.classList.add('hidden'); });
   renderAll();
   switchTab('planner');
   pwaSetup();
