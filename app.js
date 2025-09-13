@@ -42,7 +42,7 @@ function save(s){ localStorage.setItem(LS_KEY, JSON.stringify(s)); }
 let state = load();
 
 // -------------------- Tabs ---------------------------------------------------
-let sections, activeTab='planner';
+let sections, activeTab='planner', historyModal, historyDetails;
 function switchTab(name){
   activeTab = name;
   Object.entries(sections).forEach(([k,el])=> el.classList.toggle('hidden', k!==name));
@@ -185,18 +185,31 @@ function renderHistory(){
   if(!state.history.length){ empty.classList.remove('hidden'); wrap.classList.add('hidden'); return; }
   empty.classList.add('hidden'); wrap.classList.remove('hidden');
   tbody.innerHTML='';
-  state.history.forEach(h=>{
+  state.history.forEach((h,idx)=>{
     const tr = el('tr');
+    const link = el('a',{href:'#'},'View');
+    link.addEventListener('click', e=>{ e.preventDefault(); showHistoryDetails(idx); });
     tr.append(
-      el('td',{},new Date(h.completedAt).toLocaleString()),
-      el('td',{}, el('span',{class:`pill ${PRIORITIES[h.priority].pill}`}, PRIORITIES[h.priority].label)),
+      el('td',{}, new Date(h.completedAt).toLocaleString()),
       el('td',{}, h.title),
-      el('td',{}, h.people||'—'),
-      el('td',{}, h.deliverable||'—'),
-      el('td',{style:'text-align:right;font-weight:600'}, String(h.xpAwarded))
+      el('td',{}, link)
     );
     tbody.appendChild(tr);
   });
+}
+
+function showHistoryDetails(idx){
+  const h = state.history[idx];
+  if(!h) return;
+  historyDetails.innerHTML = `
+    <p><b>Task:</b> ${h.title}</p>
+    <p><b>Priority:</b> ${PRIORITIES[h.priority].label}</p>
+    <p><b>Involved:</b> ${h.people || '—'}</p>
+    <p><b>Deliverable:</b> ${h.deliverable || '—'}</p>
+    <p><b>XP:</b> ${h.xpAwarded}</p>
+    <p><b>Completed:</b> ${new Date(h.completedAt).toLocaleString()}</p>
+  `;
+  historyModal.classList.remove('hidden');
 }
 
 // ----- Robot
@@ -313,6 +326,11 @@ document.addEventListener('DOMContentLoaded', ()=>{
   powerLink.addEventListener('click', e=>{ e.preventDefault(); powerModal.classList.remove('hidden'); });
   powerClose.addEventListener('click', ()=> powerModal.classList.add('hidden'));
   powerModal.addEventListener('click', e=>{ if(e.target===powerModal) powerModal.classList.add('hidden'); });
+  historyModal = $('#historyModal');
+  historyDetails = $('#historyDetails');
+  const historyClose = $('#historyClose');
+  historyClose.addEventListener('click', ()=> historyModal.classList.add('hidden'));
+  historyModal.addEventListener('click', e=>{ if(e.target===historyModal) historyModal.classList.add('hidden'); });
   renderAll();
   switchTab('planner');
   pwaSetup();
