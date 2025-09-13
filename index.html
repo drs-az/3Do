@@ -13,7 +13,7 @@
     <header class="row topbar">
       <div>
         <h1>🤖</h1>
-        <div class="muted"></div>
+        <div class="muted"><a href="#" id="powerLink">Learn about The Power of Three</a></div>
       </div>
       <div class="row">
         <button id="installBtn" class="btn install hidden">Install App</button>
@@ -72,11 +72,30 @@
         </table>
       </div>
     </section>
-    <footer class="footer">
-      <button id="updateBtn" class="btn">Update</button>
-    </footer>
-  </div>
+  <footer class="footer">
+    <button id="updateBtn" class="btn">Update</button>
+  </footer>
+</div>
 
-  <script src="app.js"></script>
+<div id="powerModal" class="modal hidden">
+  <div class="modal-content">
+    <h2>The Power of 3</h2>
+    <p>Most task lists fail because they try to do too much. You open the app, dump in everything you might want to accomplish, and suddenly your to-do list feels more like a guilt trip than a productivity tool.</p>
+    <p>Science says our brains work differently. Research on working memory shows we can only juggle about 3–4 meaningful tasks at once before focus starts to break down. Long lists don’t make us more productive — they just increase stress and decision fatigue.</p>
+    <p>By limiting your list to three tasks, you’re forced to choose what really matters today. It’s not about doing everything — it’s about doing the right things. When you finish all three, you actually complete your list, and that sense of momentum fuels even more progress.</p>
+    <p>That’s the power of 3:</p>
+    <ul>
+      <li>Clarity: No clutter, just focus</li>
+      <li>Priority: The most important work comes first</li>
+      <li>Completion: Finish your list, build momentum</li>
+    </ul>
+    <p>Your productivity doesn’t need more — it needs less. Three is enough.</p>
+    <div style="text-align:right;margin-top:16px">
+      <button id="powerClose" class="btn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
