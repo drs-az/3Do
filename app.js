@@ -274,7 +274,7 @@ function robotSVG(unlocked){
 // -------------------- PWA Registration & Install ----------------------------
 function pwaSetup(){
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
   }
   let deferredPrompt = null; const installBtn = $('#installBtn');
   window.addEventListener('beforeinstallprompt', (e)=>{
@@ -292,6 +292,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.querySelectorAll('nav [data-tab]').forEach(btn=>btn.addEventListener('click', ()=>switchTab(btn.dataset.tab)));
   $('#resetBtn').addEventListener('click',()=>{
     if(confirm('Reset all data? This cannot be undone.')){ state = { ...defaultState }; renderAll(); }
+  });
+  $('#updateBtn').addEventListener('click', async ()=>{
+    if('serviceWorker' in navigator && navigator.serviceWorker.controller){
+      const mc = new MessageChannel();
+      mc.port1.onmessage = () => window.location.reload();
+      navigator.serviceWorker.controller.postMessage({type:'CLEAR_CACHE'}, [mc.port2]);
+    } else {
+      window.location.reload();
+    }
   });
   renderAll();
   switchTab('planner');
