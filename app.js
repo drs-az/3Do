@@ -305,9 +305,17 @@ function pwaSetup(){
 document.addEventListener('DOMContentLoaded', ()=>{
   sections = { planner:$('#planner'), robot:$('#robot'), history:$('#history') };
   document.querySelectorAll('nav [data-tab]').forEach(btn=>btn.addEventListener('click', ()=>switchTab(btn.dataset.tab)));
-  $('#resetBtn').addEventListener('click',()=>{
-    if(confirm('Reset all data? This cannot be undone.')){ state = { ...defaultState }; renderAll(); }
+  const resetModal = $('#resetModal');
+  const resetConfirm = $('#resetConfirm');
+  const resetCancel = $('#resetCancel');
+  $('#resetBtn').addEventListener('click',()=> resetModal.classList.remove('hidden'));
+  resetCancel.addEventListener('click', ()=> resetModal.classList.add('hidden'));
+  resetConfirm.addEventListener('click', ()=>{
+    state = { ...defaultState };
+    renderAll();
+    resetModal.classList.add('hidden');
   });
+  resetModal.addEventListener('click', e=>{ if(e.target===resetModal) resetModal.classList.add('hidden'); });
   $('#updateBtn').addEventListener('click', async ()=>{
     if('serviceWorker' in navigator){
       await navigator.serviceWorker.ready;
