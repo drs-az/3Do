@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Three‑Slot To‑Do + Weekly Robot</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="row" style="justify-content:space-between">
+      <div>
+        <h1>Three‑Slot To‑Do + Weekly Robot</h1>
+        <div class="muted">A focused planner with red/yellow/green slots, XP, and a weekly robot build.</div>
+      </div>
+      <div class="row">
+        <button id="installBtn" class="btn install hidden">Install App</button>
+        <div class="card" style="padding:8px 12px">
+          <div class="muted" style="font-size:12px">XP (This Week)</div>
+          <div id="xpWeek" style="font-size:18px;font-weight:600">0</div>
+        </div>
+        <div class="card" style="padding:8px 12px">
+          <div class="muted" style="font-size:12px">XP (All‑Time)</div>
+          <div id="xpAll" style="font-size:18px;font-weight:600">0</div>
+        </div>
+      </div>
+    </header>
+
+    <nav class="tabs">
+      <button class="btn" data-tab="planner">Planner</button>
+      <button class="btn" data-tab="robot">Robot</button>
+      <button class="btn" data-tab="history">History</button>
+      <div class="right"></div>
+      <button id="resetBtn" class="btn warn">Reset</button>
+    </nav>
+
+    <section id="planner" class="tab card">
+      <div class="grid cols-3">
+        <div class="slot" data-priority="red"></div>
+        <div class="slot" data-priority="yellow"></div>
+        <div class="slot" data-priority="green"></div>
+      </div>
+    </section>
+
+    <section id="robot" class="tab card hidden">
+      <div class="grid cols-2">
+        <div>
+          <h2 style="margin:0 0 8px">Your Weekly Robot</h2>
+          <div class="muted" style="margin-bottom:12px">Parts unlock as you earn weekly XP. New week = fresh build.</div>
+          <div id="robotCanvas" class="card" style="text-align:center"></div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">Unlocks</h3>
+          <ul id="unlockList" style="list-style:none;padding:0;margin:0"></ul>
+          <div class="muted" style="margin-top:8px">This week: <b id="xpWeek2">0</b> XP</div>
+          <div class="muted" style="font-size:12px">Week key: <span id="weekKey">—</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="history" class="tab card hidden">
+      <h2 style="margin:0 0 8px">Completed Tasks</h2>
+      <div id="historyEmpty" class="muted">No completed tasks yet.</div>
+      <div id="historyTableWrap" class="hidden">
+        <table>
+          <thead>
+            <tr class="muted"><th>Completed</th><th>Priority</th><th>Task</th><th>Involved</th><th>Deliverable</th><th style="text-align:right">XP</th></tr>
+          </thead>
+          <tbody id="historyTbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
