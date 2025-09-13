@@ -316,25 +316,20 @@ document.addEventListener('DOMContentLoaded', ()=>{
     resetModal.classList.add('hidden');
   });
   resetModal.addEventListener('click', e=>{ if(e.target===resetModal) resetModal.classList.add('hidden'); });
-  $('#updateBtn').addEventListener('click', async ()=>{
+  const updateBtn = $('#updateBtn');
+  if('serviceWorker' in navigator && !navigator.serviceWorker.controller){
+    updateBtn.disabled = true;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      updateBtn.disabled = false;
+    }, { once:true });
+  }
+  updateBtn.addEventListener('click', async ()=>{
     if('serviceWorker' in navigator){
-      await navigator.serviceWorker.ready;
-      if(navigator.serviceWorker.controller){
+      const sw = await navigator.serviceWorker.ready.then(reg=>reg.active);
+      if(sw){
         const mc = new MessageChannel();
-        const timeout = setTimeout(() => {
-          alert('No response from Service Worker. Reloading...');
-          window.location.reload();
-        }, 5000);
-        mc.port1.onmessage = (e) => {
-          clearTimeout(timeout);
-          const data = e.data;
-          if(data?.status === 'error'){
-            alert(`Update failed: ${data.message}`);
-          } else {
-            window.location.reload();
-          }
-        };
-        navigator.serviceWorker.controller.postMessage({type:'CLEAR_CACHE'}, [mc.port2]);
+        mc.port1.onmessage = () => window.location.reload();
+        sw.postMessage({type:'CLEAR_CACHE'}, [mc.port2]);
       } else {
         alert('No Service Worker available to update.');
       }
