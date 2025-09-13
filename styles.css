@@ -22,8 +22,8 @@ input{width:100%;padding:10px;border:1px solid var(--border);border-radius:12px;
 table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:10px;text-align:left;border-top:1px solid var(--border)}
 #historyTableWrap{overflow-x:auto}
+#historyTableWrap table{table-layout:fixed}
 @media(max-width:600px){
-  #historyTableWrap table{table-layout:fixed}
   #historyTableWrap th,#historyTableWrap td{word-break:break-word;white-space:normal}
 }
 .pill{padding:2px 8px;border-radius:999px;border:1px solid}

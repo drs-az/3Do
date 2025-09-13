@@ -191,8 +191,10 @@ function renderHistory(){
     link.addEventListener('click', e=>{ e.preventDefault(); showHistoryDetails(idx); });
     tr.append(
       el('td',{}, new Date(h.completedAt).toLocaleString()),
-      el('td',{}, h.title),
-      el('td',{}, link)
+      el('td',{}, [
+        el('div',{}, h.title),
+        el('div',{style:'margin-top:4px'}, link)
+      ])
     );
     tbody.appendChild(tr);
   });
