@@ -293,6 +293,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
   $('#resetBtn').addEventListener('click',()=>{
     if(confirm('Reset all data? This cannot be undone.')){ state = { ...defaultState }; renderAll(); }
   });
+  $('#updateBtn').addEventListener('click', async ()=>{
+    if('serviceWorker' in navigator && navigator.serviceWorker.controller){
+      const mc = new MessageChannel();
+      mc.port1.onmessage = () => window.location.reload();
+      navigator.serviceWorker.controller.postMessage({type:'CLEAR_CACHE'}, [mc.port2]);
+    } else {
+      window.location.reload();
+    }
+  });
   renderAll();
   switchTab('planner');
   pwaSetup();

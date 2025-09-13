@@ -28,3 +28,15 @@ self.addEventListener('fetch', (event) => {
     }).catch(()=> caches.match('index.html')))
   );
 });
+
+self.addEventListener('message', (event) => {
+  if(event.data && event.data.type === 'CLEAR_CACHE'){
+    event.waitUntil(
+      caches.keys()
+        .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+        .then(() => caches.open(CACHE_NAME))
+        .then(cache => cache.addAll(CORE_ASSETS))
+        .then(() => event.ports[0] && event.ports[0].postMessage('UPDATED'))
+    );
+  }
+});
