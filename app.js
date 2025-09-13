@@ -316,13 +316,20 @@ document.addEventListener('DOMContentLoaded', ()=>{
     resetModal.classList.add('hidden');
   });
   resetModal.addEventListener('click', e=>{ if(e.target===resetModal) resetModal.classList.add('hidden'); });
-  $('#updateBtn').addEventListener('click', async ()=>{
+  const updateBtn = $('#updateBtn');
+  if('serviceWorker' in navigator && !navigator.serviceWorker.controller){
+    updateBtn.disabled = true;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      updateBtn.disabled = false;
+    }, { once:true });
+  }
+  updateBtn.addEventListener('click', async ()=>{
     if('serviceWorker' in navigator){
-      await navigator.serviceWorker.ready;
-      if(navigator.serviceWorker.controller){
+      const sw = await navigator.serviceWorker.ready.then(reg=>reg.active);
+      if(sw){
         const mc = new MessageChannel();
         mc.port1.onmessage = () => window.location.reload();
-        navigator.serviceWorker.controller.postMessage({type:'CLEAR_CACHE'}, [mc.port2]);
+        sw.postMessage({type:'CLEAR_CACHE'}, [mc.port2]);
       } else {
         alert('No Service Worker available to update.');
       }
