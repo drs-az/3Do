@@ -321,7 +321,19 @@ document.addEventListener('DOMContentLoaded', ()=>{
       await navigator.serviceWorker.ready;
       if(navigator.serviceWorker.controller){
         const mc = new MessageChannel();
-        mc.port1.onmessage = () => window.location.reload();
+        const timeout = setTimeout(() => {
+          alert('No response from Service Worker. Reloading...');
+          window.location.reload();
+        }, 5000);
+        mc.port1.onmessage = (e) => {
+          clearTimeout(timeout);
+          const data = e.data;
+          if(data?.status === 'error'){
+            alert(`Update failed: ${data.message}`);
+          } else {
+            window.location.reload();
+          }
+        };
         navigator.serviceWorker.controller.postMessage({type:'CLEAR_CACHE'}, [mc.port2]);
       } else {
         alert('No Service Worker available to update.');
