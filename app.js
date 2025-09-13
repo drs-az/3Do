@@ -26,6 +26,12 @@ function isoWeekKey(date = new Date()){
   return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
 }
 
+const logSound = new Audio('sounds/log.mp3');
+function playLogSound(){
+  logSound.currentTime = 0;
+  logSound.play().catch(()=>{});
+}
+
 // -------------------- State (localStorage) ----------------------------------
 const LS_KEY = 'three_slot_planner_html_v1';
 const defaultState = {
@@ -127,6 +133,7 @@ function taskForm(priority){
         if(!title.value.trim()||!deliver.value.trim()) return;
         state.tasks[priority] = { title:title.value.trim(), people:people.value.trim(), deliverable:deliver.value.trim(), createdAt:new Date().toISOString() };
         renderAll();
+        playLogSound();
       }),
       el('span',{class:'muted', style:'font-size:12px', html:`Only one ${p.label.toLowerCase()} task at a time.`})
     ])
@@ -175,6 +182,7 @@ function completeTask(priority){
   state.xpTotal += xp;
   state.xpByWeek[wk] = (state.xpByWeek[wk]||0) + xp;
   renderAll();
+  playLogSound();
 }
 
 // ----- History
