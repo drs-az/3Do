@@ -1,11 +1,11 @@
 const CACHE_VERSION = 'v1.0.1';
 const CACHE_NAME = `three-slot-cache-${CACHE_VERSION}`;
 const CORE_ASSETS = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/app.js',
-  '/manifest.webmanifest',
+  './',
+  './index.html',
+  './styles.css',
+  './app.js',
+  './manifest.webmanifest',
 ];
 
 self.addEventListener('install', (event) => {
@@ -25,6 +25,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(req).then(cached => cached || fetch(req).then(res => {
       const clone = res.clone(); caches.open(CACHE_NAME).then(c => c.put(req, clone)); return res;
-    }).catch(()=> caches.match('/index.html')))
+    }).catch(()=> caches.match('index.html')))
   );
 });

@@ -274,7 +274,7 @@ function robotSVG(unlocked){
 // -------------------- PWA Registration & Install ----------------------------
 function pwaSetup(){
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
   }
   let deferredPrompt = null; const installBtn = $('#installBtn');
   window.addEventListener('beforeinstallprompt', (e)=>{
