@@ -11,10 +11,11 @@ function el(tag, props={}, children=[]) {
 }
 
 // -------------------- Constants & Helpers -----------------------------------
+const TASK_XP = 5;
 const PRIORITIES = {
-  red:   { label: 'High',   xp: 15, pill:'red'   },
-  yellow:{ label: 'Medium', xp: 10, pill:'yellow'},
-  green: { label: 'Low',    xp: 5, pill:'green' },
+  red:   { label: 'High',   pill:'red'   },
+  yellow:{ label: 'Medium', pill:'yellow'},
+  green: { label: 'Low',    pill:'green' },
 };
 
 function isoWeekKey(date = new Date()){
@@ -34,21 +35,50 @@ function playLogSound(){
 
 // -------------------- State (localStorage) ----------------------------------
 const LS_KEY = 'three_slot_planner_html_v1';
+function generateId(){
+  if(window.crypto && window.crypto.randomUUID){
+    return window.crypto.randomUUID();
+  }
+  return `t_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+}
+
 const defaultState = {
-  tasks: { red:null, yellow:null, green:null },
+  tasks: [],
   xpTotal: 0,
   xpByWeek: {},
   history: [],
 };
+function ensureTaskId(task){
+  if(task.id) return task;
+  return { ...task, id: generateId() };
+}
+function migrateTasks(savedTasks){
+  if(Array.isArray(savedTasks)){
+    return savedTasks.map(ensureTaskId);
+  }
+  if(savedTasks && typeof savedTasks === 'object'){
+    return Object.entries(savedTasks)
+      .filter(([,task])=>!!task)
+      .map(([priority, task])=> ensureTaskId({ ...task, priority }))
+      .sort((a,b)=> new Date(a.createdAt||0) - new Date(b.createdAt||0));
+  }
+  return [];
+}
 function load(){
-  try{ return { ...defaultState, ...(JSON.parse(localStorage.getItem(LS_KEY))||{}) }; }
-  catch(e){ return defaultState }
+  try{
+    const raw = JSON.parse(localStorage.getItem(LS_KEY)) || {};
+    const state = { ...defaultState, ...raw };
+    state.tasks = migrateTasks(raw.tasks);
+    return state;
+  }
+  catch(e){ return { ...defaultState }; }
 }
 function save(s){ localStorage.setItem(LS_KEY, JSON.stringify(s)); }
 let state = load();
 
 // -------------------- Tabs ---------------------------------------------------
 let sections, activeTab='planner', historyModal, historyDetails;
+let editingTaskId = null;
 function switchTab(name){
   activeTab = name;
   Object.entries(sections).forEach(([k,el])=> el.classList.toggle('hidden', k!==name));
@@ -71,37 +101,8 @@ function renderHeader(){
 
 // ----- Slots
 function renderSlots(){
-  document.querySelectorAll('.slot').forEach(container=>{
-    const pr = container.dataset.priority;
-    const task = state.tasks[pr];
-    container.innerHTML = '';
-
-    const header = el('div',{class:'row', style:'justify-content:space-between'},[
-      el('div',{html:`<b>${PRIORITIES[pr].label} Priority</b>`}),
-      el('span',{class:'chip', html:`${PRIORITIES[pr].xp} XP`})
-    ]);
-    container.appendChild(header);
-
-    if(task){
-      const view = el('div',{},[
-        field('Task', task.title),
-        field("Who’s involved", task.people||'—'),
-        field('Deliverable', task.deliverable||'—'),
-      ]);
-      container.appendChild(view);
-
-      const actions = el('div',{class:'row', style:'margin-top:8px'},[
-        button('Edit', ()=>editTask(pr)),
-        button(`Complete +${PRIORITIES[pr].xp} XP`, ()=>completeTask(pr), 'pri'),
-        el('div',{class:'right'}),
-        button('Delete', ()=>deleteTask(pr), 'warn')
-      ]);
-      container.appendChild(actions);
-    } else {
-      const form = taskForm(pr);
-      container.appendChild(form);
-    }
-  });
+  renderTaskCreator();
+  renderTaskColumns();
 }
 
 function field(labelText, value){
@@ -111,34 +112,12 @@ function field(labelText, value){
   ]);
 }
 
-function button(text, onClick, kind){
-  const b = el('button',{class:`btn ${kind||''}`},text);
-  b.addEventListener('click', onClick); return b;
-}
-
-function taskForm(priority){
-  const p = PRIORITIES[priority];
-  const f = el('form');
-  const title = el('input',{placeholder:'e.g., Draft investor update', maxlength:'160'});
-  const people = el('input',{placeholder:'e.g., Jason, Melissa — report to CFO', maxlength:'160'});
-  const deliver = el('input',{placeholder:'e.g., 1‑page update PDF', maxlength:'160'});
-
-  f.append(
-    labelWrap('One‑line task', title),
-    labelWrap('Who’s involved (teammates, reporting to)', people),
-    labelWrap('Deliverable', deliver),
-    el('div',{class:'row', style:'margin-top:8px'},[
-      button(`Add ${p.label}`, (e)=>{
-        e.preventDefault();
-        if(!title.value.trim()||!deliver.value.trim()) return;
-        state.tasks[priority] = { title:title.value.trim(), people:people.value.trim(), deliverable:deliver.value.trim(), createdAt:new Date().toISOString() };
-        renderAll();
-        playLogSound();
-      }),
-      el('span',{class:'muted', style:'font-size:12px', html:`Only one ${p.label.toLowerCase()} task at a time.`})
-    ])
-  );
-  return f;
+function button(text, onClick, kind, props={}){
+  const { class: extraClass = '', ...rest } = props;
+  const classes = ['btn', kind||'', extraClass].filter(Boolean).join(' ');
+  const b = el('button',{ ...rest, class: classes },text);
+  if(onClick) b.addEventListener('click', onClick);
+  return b;
 }
 
 function labelWrap(text,input){
@@ -147,40 +126,201 @@ function labelWrap(text,input){
   w.append(input); return w;
 }
 
-function editTask(priority){
-  const t = state.tasks[priority]; if(!t) return;
-  const slot = document.querySelector(`.slot[data-priority="${priority}"]`);
-  slot.innerHTML='';
-  const title = el('input',{value:t.title, maxlength:'160'});
-  const people = el('input',{value:t.people||'', maxlength:'160'});
-  const deliver = el('input',{value:t.deliverable||'', maxlength:'160'});
-  slot.append(
-    el('div',{class:'row', style:'justify-content:space-between'},[
-      el('div',{html:`<b>${PRIORITIES[priority].label} Priority</b>`}),
-      el('span',{class:'chip', html:`${PRIORITIES[priority].xp} XP`})
-    ]),
+function renderTaskCreator(){
+  const container = $('#taskCreator');
+  if(!container) return;
+  container.innerHTML = '';
+
+  const form = el('form',{class:'task-form'});
+  const title = el('input',{placeholder:'e.g., Draft investor update', maxlength:'160'});
+  const people = el('input',{placeholder:'e.g., Jason, Melissa — report to CFO', maxlength:'160'});
+  const deliver = el('input',{placeholder:'e.g., 1‑page update PDF', maxlength:'160'});
+  const priority = el('select');
+  Object.entries(PRIORITIES).forEach(([value, info])=>{
+    priority.append(el('option',{value}, info.label));
+  });
+  const defaultPriority = Object.keys(PRIORITIES)[0];
+  priority.value = defaultPriority;
+
+  const fields = el('div',{class:'task-form-grid'},[
     labelWrap('One‑line task', title),
     labelWrap('Who’s involved (teammates, reporting to)', people),
     labelWrap('Deliverable', deliver),
-    el('div',{class:'row', style:'margin-top:8px'},[
-      button('Save', ()=>{ state.tasks[priority] = { ...t, title:title.value.trim(), people:people.value.trim(), deliverable:deliver.value.trim() }; renderAll(); }, 'pri'),
-      el('div',{class:'right'}),
-      button('Cancel', ()=>renderAll())
-    ])
-  );
+    labelWrap('Priority', priority)
+  ]);
+
+  const actions = el('div',{class:'row', style:'margin-top:8px'},[
+    button('Add Task', null, 'pri', { type:'submit' }),
+    el('span',{class:'muted', style:'font-size:12px'}, `Each task awards ${TASK_XP} XP.`)
+  ]);
+
+  form.append(fields, actions);
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const titleValue = title.value.trim();
+    const deliverValue = deliver.value.trim();
+    if(!titleValue || !deliverValue) return;
+    const newTask = {
+      id: generateId(),
+      title: titleValue,
+      people: people.value.trim(),
+      deliverable: deliverValue,
+      priority: priority.value,
+      createdAt: new Date().toISOString(),
+    };
+    state.tasks = [...state.tasks, newTask];
+    title.value='';
+    people.value='';
+    deliver.value='';
+    priority.value = defaultPriority;
+    editingTaskId = null;
+    renderAll();
+    playLogSound();
+  });
+
+  container.appendChild(form);
 }
 
-function deleteTask(priority){ state.tasks[priority]=null; renderAll(); }
+function renderTaskColumns(){
+  const grouped = Object.keys(PRIORITIES).reduce((acc,key)=>{ acc[key]=[]; return acc; }, {});
+  state.tasks.forEach(task=>{
+    const key = PRIORITIES[task.priority] ? task.priority : Object.keys(PRIORITIES)[0];
+    grouped[key].push(task);
+  });
+  Object.values(grouped).forEach(list=>{
+    list.sort((a,b)=> new Date(a.createdAt||0) - new Date(b.createdAt||0));
+  });
 
-function completeTask(priority){
-  const t = state.tasks[priority]; if(!t) return;
-  const xp = PRIORITIES[priority].xp;
+  document.querySelectorAll('.slot').forEach(container=>{
+    const pr = container.dataset.priority;
+    const info = PRIORITIES[pr] || PRIORITIES[Object.keys(PRIORITIES)[0]];
+    const tasks = grouped[pr]||[];
+    container.innerHTML = '';
+
+    const header = el('div',{class:'row slot-header', style:'justify-content:space-between'},[
+      el('div',{html:`<b>${info.label} Priority</b>`}),
+      el('span',{class:'chip', html:`${tasks.length} task${tasks.length===1?'':'s'}`})
+    ]);
+    container.appendChild(header);
+
+    if(!tasks.length){
+      container.appendChild(el('div',{class:'muted empty-state', html:'No tasks yet.'}));
+      return;
+    }
+
+    tasks.forEach(task=> container.appendChild(taskCard(task)));
+  });
+}
+
+function taskCard(task){
+  const fallback = PRIORITIES[Object.keys(PRIORITIES)[0]];
+  const info = PRIORITIES[task.priority] || fallback;
+  const card = el('div',{class:`task-card ${info.pill}`});
+  const pillEl = el('span',{class:`pill ${info.pill}`}, info.label);
+  const xpEl = el('span',{class:'chip', html:`${TASK_XP} XP`});
+  const header = el('div',{class:'row task-card-header', style:'justify-content:space-between'},[
+    pillEl,
+    xpEl
+  ]);
+
+  if(editingTaskId === task.id){
+    const title = el('input',{value:task.title, maxlength:'160'});
+    const people = el('input',{value:task.people||'', maxlength:'160'});
+    const deliver = el('input',{value:task.deliverable||'', maxlength:'160'});
+    const priority = el('select');
+    Object.entries(PRIORITIES).forEach(([value, pInfo])=>{
+      priority.append(el('option',{value}, pInfo.label));
+    });
+    priority.value = task.priority;
+    priority.addEventListener('change', ()=>{
+      const nextInfo = PRIORITIES[priority.value] || fallback;
+      pillEl.textContent = nextInfo.label;
+      pillEl.className = `pill ${nextInfo.pill}`;
+      card.className = `task-card ${nextInfo.pill}`;
+    });
+
+    const fields = el('div',{class:'task-form-grid'},[
+      labelWrap('One‑line task', title),
+      labelWrap('Who’s involved (teammates, reporting to)', people),
+      labelWrap('Deliverable', deliver),
+      labelWrap('Priority', priority)
+    ]);
+
+    const actions = el('div',{class:'row task-actions'},[
+      button('Save', ()=>{
+        const titleValue = title.value.trim();
+        const deliverValue = deliver.value.trim();
+        if(!titleValue || !deliverValue) return;
+        saveTaskEdits(task.id, {
+          title: titleValue,
+          people: people.value.trim(),
+          deliverable: deliverValue,
+          priority: priority.value,
+        });
+      }, 'pri'),
+      button('Cancel', ()=>cancelEditTask(), null),
+      el('div',{class:'right'}),
+      button('Delete', ()=>deleteTask(task.id), 'warn')
+    ]);
+
+    card.append(header, fields, actions);
+    return card;
+  }
+
+  const details = el('div',{class:'task-details'},[
+    field('Task', task.title),
+    field("Who’s involved", task.people||'—'),
+    field('Deliverable', task.deliverable||'—')
+  ]);
+
+  const actions = el('div',{class:'row task-actions'},[
+    button('Edit', ()=>startEditTask(task.id)),
+    button(`Complete +${TASK_XP} XP`, ()=>completeTask(task.id), 'pri'),
+    el('div',{class:'right'}),
+    button('Delete', ()=>deleteTask(task.id), 'warn')
+  ]);
+
+  card.append(header, details, actions);
+  return card;
+}
+
+function startEditTask(id){
+  editingTaskId = id;
+  renderAll();
+}
+
+function cancelEditTask(){
+  editingTaskId = null;
+  renderAll();
+}
+
+function saveTaskEdits(id, updates){
+  const idx = state.tasks.findIndex(t=>t.id===id);
+  if(idx===-1) return;
+  state.tasks[idx] = { ...state.tasks[idx], ...updates };
+  editingTaskId = null;
+  renderAll();
+}
+
+function deleteTask(id){
+  const idx = state.tasks.findIndex(t=>t.id===id);
+  if(idx===-1) return;
+  state.tasks.splice(idx,1);
+  if(editingTaskId === id) editingTaskId = null;
+  renderAll();
+}
+
+function completeTask(id){
+  const idx = state.tasks.findIndex(t=>t.id===id);
+  if(idx===-1) return;
+  const [task] = state.tasks.splice(idx,1);
+  const xp = TASK_XP;
   const wk = isoWeekKey();
-  const historyItem = { ...t, priority, xpAwarded: xp, completedAt:new Date().toISOString() };
+  const historyItem = { ...task, xpAwarded: xp, completedAt:new Date().toISOString() };
   state.history = [historyItem, ...state.history].slice(0,500);
-  state.tasks[priority] = null;
   state.xpTotal += xp;
   state.xpByWeek[wk] = (state.xpByWeek[wk]||0) + xp;
+  editingTaskId = null;
   renderAll();
   playLogSound();
 }
@@ -211,9 +351,10 @@ function renderHistory(){
 function showHistoryDetails(idx){
   const h = state.history[idx];
   if(!h) return;
+  const info = PRIORITIES[h.priority] || { label: (h.priority||'—') };
   historyDetails.innerHTML = `
     <p><b>Task:</b> ${h.title}</p>
-    <p><b>Priority:</b> ${PRIORITIES[h.priority].label}</p>
+    <p><b>Priority:</b> ${info.label}</p>
     <p><b>Involved:</b> ${h.people || '—'}</p>
     <p><b>Deliverable:</b> ${h.deliverable || '—'}</p>
     <p><b>XP:</b> ${h.xpAwarded}</p>
